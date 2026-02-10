@@ -1,5 +1,7 @@
 package org.surro.ecomapp.service;
 
+import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.ai.chat.prompt.PromptTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -8,11 +10,16 @@ import org.surro.ecomapp.repo.ProductRepo;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.Map;
 
 @Service
 public class ProductService {
     @Autowired
-    ProductRepo repo;
+    private ProductRepo repo;
+    @Autowired
+    private ChatClient chatClient;;
+
+
 
     public List<Product> getProducts() {
         return repo.findAll();
@@ -62,5 +69,16 @@ public class ProductService {
 
     public List<Product> getProducts(String keyword) {
         return repo.searchProducts(keyword);
+    }
+
+    public String generateDescription(String name, String category) {
+        PromptTemplate template = new PromptTemplate("""
+                You are marketologist.
+                Generate description for product based on its name {name} and category {category} for web site catalog.
+                Max length 200 symbols.
+                """);
+        return chatClient
+                .prompt(template.create(Map.of("name", name, "category", category )))
+                .call().content();
     }
 }

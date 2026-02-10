@@ -1,7 +1,5 @@
 package org.surro.ecomapp.controller;
 
-import org.jspecify.annotations.Nullable;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.util.CollectionUtils;
@@ -17,9 +15,12 @@ import java.util.List;
 @RequestMapping("/api")
 @CrossOrigin(origins = "http://localhost:5173")
 public class ProductController {
+    private final ProductService productService;
 
-    @Autowired
-    private ProductService productService;
+    public ProductController(ProductService productService) {
+        this.productService = productService;
+    }
+
 
     @GetMapping("/products")
     public ResponseEntity<List<Product>> getProducts() {
@@ -45,7 +46,7 @@ public class ProductController {
     }
 
     @PutMapping("/product/{id}")
-    public ResponseEntity<String> updateProduct(@PathVariable int id, @RequestPart Product product, @RequestPart @Nullable MultipartFile imageFile) {
+    public ResponseEntity<String> updateProduct(@PathVariable int id, @RequestPart Product product, @RequestPart MultipartFile imageFile) {
         Product updatedProduct = null;
         try {
             updatedProduct = productService.addOrUpdateProduct(product, imageFile);
@@ -66,6 +67,12 @@ public class ProductController {
         List<Product> products = productService.getProducts(keyword);
         HttpStatus status = CollectionUtils.isEmpty(products) ? HttpStatus.NOT_FOUND : HttpStatus.OK;
         return ResponseEntity.status(status).body(products);
+    }
+
+    @PostMapping("/product/generate-description")
+    public ResponseEntity<String> generateDescription(@RequestParam String name, @RequestParam String category) {
+        String description = productService.generateDescription(name, category);
+        return  ResponseEntity.ok(description);
     }
 
 }
