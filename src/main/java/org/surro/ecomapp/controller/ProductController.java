@@ -75,4 +75,10 @@ public class ProductController {
         return  ResponseEntity.ok(description);
     }
 
+    @PostMapping("/product/generate-image")
+    public ResponseEntity<byte[]> generateImage(@RequestParam String name, @RequestParam String category, @RequestParam String description) {
+        byte[] image = productService.generateImage(name, category, description);
+        return  ResponseEntity.ok(image);
+    }
+
 }

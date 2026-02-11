@@ -9,6 +9,9 @@ import org.surro.ecomapp.model.Product;
 import org.surro.ecomapp.repo.ProductRepo;
 
 import java.io.IOException;
+import java.io.InputStream;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.List;
 import java.util.Map;
 
@@ -17,7 +20,9 @@ public class ProductService {
     @Autowired
     private ProductRepo repo;
     @Autowired
-    private ChatClient chatClient;;
+    private ChatClient chatClient;
+    @Autowired
+    private ImageGenerationService imageGeneration;
 
 
 
@@ -80,5 +85,21 @@ public class ProductService {
         return chatClient
                 .prompt(template.create(Map.of("name", name, "category", category )))
                 .call().content();
+    }
+
+    public byte[] generateImage(String name, String category, String description) throws RuntimeException {
+        String prompt = String.format("""
+                You are marketologist.
+                Generate image for product based on its name %s, description %s and category %s for web site catalog.
+                Image must look like professional photo of product.
+                """, name, category, description);
+        String image = imageGeneration.generateImage(prompt);
+        byte[] result = null;
+        try (InputStream is = new URI(image).toURL().openStream()) {
+            result = is.readAllBytes();
+        } catch (URISyntaxException | IOException e) {
+            throw new RuntimeException(e);
+        }
+        return result;
     }
 }
