@@ -23,8 +23,8 @@ import java.util.stream.Collectors;
 public class ChatService {
     private final String SHOPPING_ASSISTANT_PROMPT;
 
-    private ChatClient chatClient;
-    private PgVectorStore vectorStore;
+    private final ChatClient chatClient;
+    private final PgVectorStore vectorStore;
 
     public ChatService(ChatClient chatClient,
                        PgVectorStore vectorStore,
@@ -42,14 +42,15 @@ public class ChatService {
     public String message(String query) {
         String context = prepareContext(query);
         Map<String,Object> variables = new HashMap<>();
-        variables.put("User query",query);
-        variables.put("Context",context);
+        variables.put("userQuery",query);
+        variables.put("context",context);
 
         PromptTemplate promptTemplate = PromptTemplate.builder()
                 .template(SHOPPING_ASSISTANT_PROMPT)
                 .variables(variables)
                 .build();
-        return callChatclient(promptTemplate.getTemplate());
+
+        return chatClient.prompt(promptTemplate.create()).call().content();
     }
 
     public String callChatclient(String prompt) {
