@@ -1,7 +1,5 @@
 package org.surro.ecomapp.service;
 
-import org.springframework.ai.chat.client.ChatClient;
-import org.springframework.ai.chat.prompt.PromptTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -13,14 +11,13 @@ import java.io.InputStream;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.List;
-import java.util.Map;
 
 @Service
 public class ProductService {
     @Autowired
     private ProductRepo repo;
     @Autowired
-    private ChatClient chatClient;
+    private ChatService chatService;
     @Autowired
     private ImageGenerationService imageGeneration;
 
@@ -77,14 +74,12 @@ public class ProductService {
     }
 
     public String generateDescription(String name, String category) {
-        PromptTemplate template = new PromptTemplate("""
+        String prompt = String.format("""
                 You are marketologist.
-                Generate description for product based on its name {name} and category {category} for web site catalog.
+                Generate description for product based on its name %s and category %s for web site catalog.
                 Max length 200 symbols.
-                """);
-        return chatClient
-                .prompt(template.create(Map.of("name", name, "category", category )))
-                .call().content();
+                """, name, category);
+        return chatService.callChatclient(prompt);
     }
 
     public byte[] generateImage(String name, String category, String description) throws RuntimeException {
