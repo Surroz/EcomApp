@@ -1,5 +1,7 @@
 package org.surro.ecomapp.service;
 
+import org.springframework.ai.document.Document;
+import org.springframework.ai.vectorstore.pgvector.PgVectorStore;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.surro.ecomapp.model.Order;
@@ -16,6 +18,7 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 @Service
@@ -24,6 +27,11 @@ public class OrderService {
     private OrderRepo orderRepo;
     @Autowired
     private ProductRepo productRepo;
+    @Autowired
+    private ProductService productService;
+    @Autowired
+    private PgVectorStore vectorStore;
+
 
     public OrderResponse placeOrder(OrderRequest orderRequest) {
         Order order = new Order();
@@ -40,6 +48,9 @@ public class OrderService {
             product.setStockQuantity(product.getStockQuantity() - itemReq.quantity());
             productRepo.save(product);
 
+            productService.deleteVectorDbProduct(product.getId());
+            productService.saveProductToVectorDb(product);
+
             OrderItem orderItem = OrderItem.builder()
                     .product(product)
                     .quantity(itemReq.quantity())
@@ -53,6 +64,8 @@ public class OrderService {
         }
         order.setOrderItems(orderItems);
         Order savedOrder = orderRepo.save(order);
+
+        saveOrderToVectorDb(savedOrder);
 
         List<OrderItemResponse> itemResponses = new ArrayList<>();
         for(OrderItem item: order.getOrderItems()) {
@@ -74,6 +87,31 @@ public class OrderService {
         );
 
         return orderResponse;
+    }
+
+    private void saveOrderToVectorDb(Order savedOrder) {
+        StringBuilder content = new StringBuilder();
+        content.append("Order Summary: \n");
+        content.append("Order  ID: ").append(savedOrder.getOrderId()).append("\n");
+        content.append("Customer: ").append(savedOrder.getCustomerName()).append("\n");
+        content.append("Email: ").append(savedOrder.getEmail()).append("\n");
+        content.append("Date: ").append(savedOrder.getOrderDate()).append("\n");
+        content.append("Status: ").append(savedOrder.getStatus()).append("\n");
+        content.append("Products: \n");
+
+        for(OrderItem orderItem : savedOrder.getOrderItems()) {
+            content.append("- product name: ").append(orderItem.getProduct().getName())
+                    .append(", quantity ").append(orderItem.getQuantity())
+                    .append(", price: ").append(orderItem.getTotalPrice()).append("\n");
+        }
+
+        Document document = new Document(
+                UUID.randomUUID().toString(),
+                content.toString(),
+                Map.of("orderId", savedOrder.getOrderId())
+        );
+
+        vectorStore.add(List.of(document));
     }
 
     public List<OrderResponse> getAllOrderResponses() {

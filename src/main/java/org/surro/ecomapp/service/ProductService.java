@@ -76,7 +76,7 @@ public class ProductService {
         return savedProduct;
     }
 
-    private void saveProductToVectorDb(Product product) {
+    public void saveProductToVectorDb(Product product) {
         String content = String.format(
                 "Product name: %s, description: %s, brand: %s, category: %s, price: %s, release date: %s, available: %s, stock: %s",
                 product.getName(),
@@ -95,6 +95,10 @@ public class ProductService {
                 Map.of("productId", String.valueOf(product.getId())));
 
         vectorStore.add(List.of(document));
+    }
+
+    public void deleteVectorDbProduct(Integer id) {
+        vectorStore.delete(String.format("productId == %s", String.valueOf(id)));
     }
 
     public List<Product> getProducts(String keyword) {
